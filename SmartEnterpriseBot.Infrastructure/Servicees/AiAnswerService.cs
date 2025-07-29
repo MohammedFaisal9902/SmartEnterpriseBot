@@ -4,7 +4,6 @@ using Azure.Search.Documents;
 using Azure.Search.Documents.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SmartEnterpriseBot.Application.Interfaces;
 using SmartEnterpriseBot.Domain.Enums;
@@ -100,63 +99,109 @@ namespace SmartEnterpriseBot.Infrastructure.Services
                 return cached;
             }
 
+            _logger.LogInformation("Starting search for question: '{Question}' with role: {Role}", question, userRole);
+
             var searchOptions = new SearchOptions
             {
                 Size = 5,
                 IncludeTotalCount = true,
-                QueryType = SearchQueryType.Semantic,
+                Select = { "content", "allowedRoles" },
             };
 
             if (!string.Equals(userRole.ToString(), "Admin", StringComparison.OrdinalIgnoreCase))
             {
-                // Filter results by allowedRoles only if not Admin
-                searchOptions.Filter = $"allowedRoles/any(r: r eq '{userRole}')";
+                var filter = $"allowedRoles/any(r: r eq '{userRole}')";
+                searchOptions.Filter = filter;
+                _logger.LogInformation("Applying filter: {Filter}", filter);
+            }
+            else
+            {
+                _logger.LogInformation("Admin role - no filter applied");
             }
 
-            var searchResults = await _searchClient.SearchAsync<SearchDocument>(question, searchOptions);
-
-
-            var sb = new StringBuilder();
-            await foreach (var result in searchResults.Value.GetResultsAsync())
+            try
             {
-                if (result.Document.TryGetValue("content", out var content))
+                var searchResults = await _searchClient.SearchAsync<SearchDocument>(question, searchOptions);
+
+                _logger.LogInformation("Search completed. Total results: {TotalCount}", searchResults.Value.TotalCount);
+
+                var sb = new StringBuilder();
+                int resultCount = 0;
+
+                await foreach (var result in searchResults.Value.GetResultsAsync())
                 {
-                    sb.AppendLine(content.ToString());
-                    sb.AppendLine("\n---\n");
-                }
-            }
+                    resultCount++;
+                    _logger.LogInformation("Processing result {Count}, Score: {Score}", resultCount, result.Score);
 
-            if (sb.Length == 0)
-            {
-                _logger.LogWarning("No search results for role {Role}", userRole);
+                    _logger.LogInformation("Available fields: {Fields}", string.Join(", ", result.Document.Keys));
+
+                    if (result.Document.TryGetValue("content", out var content))
+                    {
+                        _logger.LogInformation("Found content, length: {Length}", content?.ToString()?.Length ?? 0);
+                        sb.AppendLine(content.ToString());
+                        sb.AppendLine("\n---\n");
+                    }
+                    else
+                    {
+                        _logger.LogWarning("No 'content' field found in result {Count}", resultCount);
+                    }
+                }
+
+                _logger.LogInformation("Total results processed: {Count}, Content length: {ContentLength}",
+                    resultCount, sb.Length);
+
+                if (sb.Length == 0)
+                {
+                    _logger.LogWarning("No search results found for role {Role} and question '{Question}'", userRole, question);
+
+                    _logger.LogInformation("Attempting search without role filter for debugging...");
+                    var debugOptions = new SearchOptions { Size = 3 };
+                    var debugResults = await _searchClient.SearchAsync<SearchDocument>(question, debugOptions);
+
+                    var debugCount = 0;
+                    await foreach (var result in debugResults.Value.GetResultsAsync())
+                    {
+                        debugCount++;
+                        _logger.LogInformation("Debug result {Count}: Fields available: {Fields}",
+                            debugCount, string.Join(", ", result.Document.Keys));
+                    }
+
+                    return null;
+                }
+
+                var prompt = $"Based on these relevant documents:\n\n{sb}\nQuestion: {question}\n\nPlease provide a concise and helpful answer based only on the information provided above.";
+                _logger.LogInformation("Sending prompt to OpenAI. Prompt length: {Length}", prompt.Length);
+
+                var chatOptions = new ChatCompletionsOptions
+                {
+                    Messages =
+                    {
+                          new ChatMessage(ChatRole.System, "You are a helpful enterprise assistant. Provide concise answers based only on the documents provided. If the documents don't contain relevant information, say so."),
+                          new ChatMessage(ChatRole.User, prompt)
+                    },
+                    Temperature = 0.2f,
+                    MaxTokens = 500
+                };
+
+                var completion = await _openAIClient.GetChatCompletionsAsync(_deploymentName, chatOptions);
+                var answer = completion.Value.Choices.FirstOrDefault()?.Message.Content?.Trim();
+
+                _logger.LogInformation("OpenAI response length: {Length}", answer?.Length ?? 0);
+
+                if (!string.IsNullOrWhiteSpace(answer))
+                {
+                    _cache.Set(cacheKey, answer, TimeSpan.FromMinutes(30));
+                    return answer;
+                }
+
+                _logger.LogError("OpenAI returned empty or null answer.");
                 return null;
             }
-
-            var prompt = $"Based on these relevant documents:\n\n{sb}\nQuestion: {question}";
-            _logger.LogInformation("Sending prompt to OpenAI.");
-
-            var chatOptions = new ChatCompletionsOptions
+            catch (Exception ex)
             {
-                Messages =
-                {
-                    new ChatMessage(ChatRole.System, "You are a helpful enterprise assistant. Provide concise answers based on documents."),
-                    new ChatMessage(ChatRole.User, prompt)
-                },
-                Temperature = 0.2f,
-                MaxTokens = 500
-            };
-
-            var completion = await _openAIClient.GetChatCompletionsAsync(_deploymentName, chatOptions);
-            var answer = completion.Value.Choices.FirstOrDefault()?.Message.Content?.Trim();
-
-            if (!string.IsNullOrWhiteSpace(answer))
-            {
-                _cache.Set(cacheKey, answer, TimeSpan.FromMinutes(30));
-                return answer;
+                _logger.LogError(ex, "Error during search operation");
+                throw;
             }
-
-            _logger.LogError("OpenAI returned empty or null answer.");
-            return null;
         }
     }
 }

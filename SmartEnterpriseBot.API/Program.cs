@@ -17,36 +17,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.ConfigureIdentityOptions();
 
-builder.Services.AddSingleton<BlobServiceClient>(provider =>
-{
-    var connectionString = provider.GetRequiredService<IConfiguration>()
-        .GetConnectionString("BlobConnectionString");
-    return new BlobServiceClient(connectionString);
-});
-
-builder.Services.AddSingleton<BlobContainerClient>(provider =>
-{
-    var blobServiceClient = provider.GetRequiredService<BlobServiceClient>();
-    var containerName = provider.GetRequiredService<IConfiguration>()["AzureBlobStorage:ContainerName"];
-    return blobServiceClient.GetBlobContainerClient(containerName);
-});
-
-builder.Services.AddSingleton<SearchClient>(provider =>
-{
-    var config = provider.GetRequiredService<IConfiguration>();
-    var endpoint = config["AzureCognitiveSearch:SearchServiceEndpoint"];
-    var apiKey = config["AzureCognitiveSearch:SearchApiKey"];
-    var indexName = config["AzureCognitiveSearch:IndexName"];
-    return new SearchClient(new Uri(endpoint), indexName, new AzureKeyCredential(apiKey));
-});
-
-builder.Services.AddSingleton<OpenAIClient>(provider =>
-{
-    var config = provider.GetRequiredService<IConfiguration>();
-    var endpoint = config["AzureOpenAI:Endpoint"];
-    var key = config["AzureOpenAI:Key"];
-    return new OpenAIClient(new Uri(endpoint), new AzureKeyCredential(key));
-});
+builder.Services.AddAzureServices(builder.Configuration);
 
 builder.Services.AddSingleton(provider =>
 {

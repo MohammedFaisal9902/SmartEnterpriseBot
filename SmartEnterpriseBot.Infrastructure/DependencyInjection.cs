@@ -13,6 +13,7 @@ namespace SmartEnterpriseBot.Infrastructure
             services.AddScoped<IDocumentService, DocumentService>();
             services.AddScoped<IAiAnswerService, AiAnswerService>();
             services.AddScoped<IKnowledgeService, KnowledgeService>();
+            services.AddScoped<ISearchIndexerService, SearchIndexerService>();
 
             return services;
         }

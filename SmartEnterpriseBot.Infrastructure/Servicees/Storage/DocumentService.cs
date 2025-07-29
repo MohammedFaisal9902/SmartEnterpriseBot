@@ -1,11 +1,14 @@
-﻿using Azure.Storage.Blobs;
+﻿using Azure;
+using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using SmartEnterpriseBot.Application.Interfaces;
 using SmartEnterpriseBot.Domain.Entities;
 using SmartEnterpriseBot.Domain.Enums;
 using SmartEnterpriseBot.Infrastructure.Identity;
-using Microsoft.EntityFrameworkCore;
+using UglyToad.PdfPig;
+using UglyToad.PdfPig.Content;
 
 namespace SmartEnterpriseBot.Infrastructure.Services.Storage
 {
@@ -13,11 +16,19 @@ namespace SmartEnterpriseBot.Infrastructure.Services.Storage
     {
         private readonly BlobContainerClient _containerClient;
         private readonly ApplicationDbContext _context;
+        private readonly ISearchIndexerService _searchIndexerService;
+        private readonly ILogger<DocumentService> _logger;
 
-        public DocumentService(BlobContainerClient containerClient, ApplicationDbContext context)
+        public DocumentService(
+            BlobContainerClient containerClient,
+            ApplicationDbContext context,
+            ISearchIndexerService searchIndexerService,
+            ILogger<DocumentService> logger)
         {
             _containerClient = containerClient;
             _context = context;
+            _searchIndexerService = searchIndexerService;
+            _logger = logger;
         }
 
         public async Task<string> UploadDocumentAsync(IFormFile file, List<Role> allowedRoles, string uploadedBy, string type, string description)
@@ -25,18 +36,16 @@ namespace SmartEnterpriseBot.Infrastructure.Services.Storage
             var fileName = $"{Guid.NewGuid()}_{file.FileName}";
             var blobClient = _containerClient.GetBlobClient(fileName);
 
-            var metadata = new Dictionary<string, string>
-            {
-                { "uploadedBy", uploadedBy },
-                { "type", type },
-                { "description", description },
-                { "roles", string.Join(",", allowedRoles.Select(r => r.ToString())) }
-            };
-
             using var stream = file.OpenReadStream();
             await blobClient.UploadAsync(stream, new Azure.Storage.Blobs.Models.BlobUploadOptions
             {
-                Metadata = metadata
+                Metadata = new Dictionary<string, string>
+                {
+                    { "uploadedBy", uploadedBy },
+                    { "type", type },
+                    { "description", description },
+                    { "roles", string.Join(",", allowedRoles.Select(r => r.ToString())) }
+                }
             });
 
             var doc = new DocumentMetadata
@@ -46,18 +55,47 @@ namespace SmartEnterpriseBot.Infrastructure.Services.Storage
                 UploadedBy = uploadedBy,
                 DocumentType = type,
                 Description = description,
-                AllowedRoles = allowedRoles.Select(roleStr => new DocumentAllowedRole
+                AllowedRoles = allowedRoles.Select(role => new DocumentAllowedRole
                 {
-                    Role = roleStr
+                    Role = role
                 }).ToList()
             };
 
             _context.DocumentMetadata.Add(doc);
             await _context.SaveChangesAsync();
 
+            var textContent = ExtractTextFromPdf(file);
+            if (!string.IsNullOrWhiteSpace(textContent))
+            {
+                await _searchIndexerService.UploadDocumentAsync(
+                    textContent,
+                    allowedRoles.Select(r => r.ToString()).ToList()
+                );
+            }
+
             return doc.BlobUrl;
         }
 
+        private string ExtractTextFromPdf(IFormFile file)
+        {
+            try
+            {
+                using var reader = PdfDocument.Open(file.OpenReadStream());
+                var sb = new System.Text.StringBuilder();
+
+                foreach (Page page in reader.GetPages())
+                {
+                    sb.AppendLine(page.Text);
+                }
+
+                return sb.ToString();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "PDF extraction failed.");
+                return string.Empty;
+            }
+        }
 
         public async Task<List<DocumentMetadata>> GetDocumentsByRoleAsync(string userRole)
         {

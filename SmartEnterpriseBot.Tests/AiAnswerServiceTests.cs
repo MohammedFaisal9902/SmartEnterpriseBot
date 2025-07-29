@@ -95,33 +95,6 @@ public class AiAnswerServiceTests : IDisposable
         Assert.Equal(cachedAnswer, result);
     }
 
-    //[Fact]
-    //public async Task GetAnswerAsync_ShouldDenyAccess_WhenUserRoleNotAllowed()
-    //{
-    //    var question = "HR Policy";
-    //    var userRole = Role.IT;
-    //    var userId = "user1";
-
-    //    var entry = new KnowledgeEntry
-    //    {
-    //        Title = "HR Policy",
-    //        Content = "HR-only content.",
-    //        CreatedBy = "admin",
-    //        UpdatedBy = "admin",
-    //        AllowedRoles = new List<KnowledgeRole>
-    //    {
-    //        new KnowledgeRole { Role = Role.HR }
-    //    }
-    //    };
-
-    //    _context.KnowledgeEntries.Add(entry);
-    //    await _context.SaveChangesAsync();
-
-    //    var answer = await _service.GetAnswerAsync(question, userRole, userId);
-
-    //    Assert.Contains("couldn't find relevant information", answer);
-    //}
-
 
     [Fact]
     public async Task GetAnswerAsync_ShouldReturnCachedUnstructuredAnswer_WhenCached()
