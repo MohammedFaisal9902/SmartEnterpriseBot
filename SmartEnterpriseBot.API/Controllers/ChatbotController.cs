@@ -22,7 +22,7 @@ namespace SmartEnterpriseBot.API.Controllers
         public async Task<IActionResult> Ask([FromBody] string question)
         {
             var userRole = User.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
-            var userId = User.Identity?.ToString();
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (!Enum.TryParse<Role>(userRole, out var roleEnum))
                 return BadRequest("Invalid role");
