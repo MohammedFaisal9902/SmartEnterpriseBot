@@ -119,7 +119,7 @@ public class AiAnswerServiceTests : IDisposable
         var userRole = Role.IT;
         var userId = "user1";
 
-        _context.Dispose(); // Trigger error
+        _context.Dispose();
 
         var result = await _service.GetAnswerAsync(question, userRole, userId);
 

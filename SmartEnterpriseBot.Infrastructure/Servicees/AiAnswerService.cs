@@ -37,7 +37,6 @@ namespace SmartEnterpriseBot.Infrastructure.Services
             {
                 _logger.LogInformation("User {UserId} asked: '{Question}' with role: {UserRole}", userId, question, userRole);
 
-                // 1️⃣ Check structured knowledge base (SQL)
                 var structured = await GetStructuredAnswerAsync(question, userRole);
                 if (!string.IsNullOrWhiteSpace(structured))
                 {
@@ -45,7 +44,6 @@ namespace SmartEnterpriseBot.Infrastructure.Services
                     return structured;
                 }
 
-                // 2️⃣ Search Azure Cognitive Search index for relevant documents
                 _logger.LogInformation("No structured answer. Performing search over index.");
                 var unstructured = await SearchAndAnswerFromIndexAsync(question, userRole);
                 if (!string.IsNullOrWhiteSpace(unstructured))
@@ -54,7 +52,6 @@ namespace SmartEnterpriseBot.Infrastructure.Services
                     return unstructured;
                 }
 
-                // 3️⃣ Final fallback
                 _logger.LogWarning("No answer found in both structured and unstructured sources.");
                 return "I couldn't find relevant information to answer your question.";
             }
@@ -73,7 +70,7 @@ namespace SmartEnterpriseBot.Infrastructure.Services
                 return cached;
             }
 
-            _logger.LogInformation("Structured cache miss. Querying database.");
+            _logger.LogInformation("Answer not found in cache. Querying database.");
 
             var knowledge = await _context.KnowledgeEntries
                 .Where(k => k.AllowedRoles.Any(r => r.Role == userRole) || userRole == Role.Admin)
@@ -138,7 +135,7 @@ namespace SmartEnterpriseBot.Infrastructure.Services
                     if (result.Document.TryGetValue("content", out var content))
                     {
                         _logger.LogInformation("Found content, length: {Length}", content?.ToString()?.Length ?? 0);
-                        sb.AppendLine(content.ToString());
+                        sb.AppendLine(content?.ToString());
                         sb.AppendLine("\n---\n");
                     }
                     else
@@ -180,7 +177,7 @@ namespace SmartEnterpriseBot.Infrastructure.Services
                           new ChatMessage(ChatRole.User, prompt)
                     },
                     Temperature = 0.2f,
-                    MaxTokens = 500
+                    MaxTokens = 800
                 };
 
                 var completion = await _openAIClient.GetChatCompletionsAsync(_deploymentName, chatOptions);

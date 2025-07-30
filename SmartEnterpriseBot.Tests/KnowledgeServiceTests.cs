@@ -3,11 +3,6 @@ using SmartEnterpriseBot.Domain.Entities;
 using SmartEnterpriseBot.Domain.Enums;
 using SmartEnterpriseBot.Infrastructure.Identity;
 using SmartEnterpriseBot.Infrastructure.Servicees;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Xunit;
 
 namespace SmartEnterpriseBot.Tests
 {

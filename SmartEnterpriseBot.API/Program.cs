@@ -1,8 +1,4 @@
-﻿using Azure;
-using Azure.AI.OpenAI;
-using Azure.Search.Documents;
-using Azure.Storage.Blobs;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using SmartEnterpriseBot.API.Configuration;
 using SmartEnterpriseBot.API.DataSeed;
 using SmartEnterpriseBot.API.Middleware.MiddlewareExtensions;
@@ -40,6 +36,7 @@ using (var scope = app.Services.CreateScope())
 {
     await DbSeeder.SeedRolesAndAdminUserAsync(scope.ServiceProvider);
 }
+app.UseHsts();
 
 if (app.Environment.IsDevelopment())
 {

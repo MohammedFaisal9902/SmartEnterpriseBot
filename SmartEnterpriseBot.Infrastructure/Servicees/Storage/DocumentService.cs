@@ -9,6 +9,7 @@ using SmartEnterpriseBot.Domain.Enums;
 using SmartEnterpriseBot.Infrastructure.Identity;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
+using Xceed.Words.NET;
 
 namespace SmartEnterpriseBot.Infrastructure.Services.Storage
 {
@@ -64,7 +65,10 @@ namespace SmartEnterpriseBot.Infrastructure.Services.Storage
             _context.DocumentMetadata.Add(doc);
             await _context.SaveChangesAsync();
 
-            var textContent = ExtractTextFromPdf(file);
+            string textContent = file.FileName.EndsWith(".pdf")
+                     ? ExtractTextFromPdf(file)
+                     : ExtractTextFromDocx(file);
+
             if (!string.IsNullOrWhiteSpace(textContent))
             {
                 await _searchIndexerService.UploadDocumentAsync(
@@ -72,7 +76,7 @@ namespace SmartEnterpriseBot.Infrastructure.Services.Storage
                     allowedRoles.Select(r => r.ToString()).ToList()
                 );
             }
-
+              
             return doc.BlobUrl;
         }
 
@@ -96,6 +100,23 @@ namespace SmartEnterpriseBot.Infrastructure.Services.Storage
                 return string.Empty;
             }
         }
+
+        private string ExtractTextFromDocx(IFormFile file)
+        {
+            try
+            {
+                using var stream = file.OpenReadStream();
+                using var doc = DocX.Load(stream);
+
+                return doc.Text;
+            }
+            catch (Exception ex) {
+
+                _logger.LogError(ex, "PDF extraction failed.");
+                return string.Empty;
+            }
+        }
+
 
         public async Task<List<DocumentMetadata>> GetDocumentsByRoleAsync(string userRole)
         {
