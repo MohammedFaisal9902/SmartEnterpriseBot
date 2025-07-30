@@ -4,7 +4,7 @@ using SmartEnterpriseBot.Domain.Entities;
 using SmartEnterpriseBot.Domain.Enums;
 using SmartEnterpriseBot.Infrastructure.Identity;
 
-namespace SmartEnterpriseBot.Infrastructure.Servicees
+namespace SmartEnterpriseBot.Infrastructure.Servicees.SearchService
 {
     public class KnowledgeService : IKnowledgeService
     {
@@ -14,7 +14,7 @@ namespace SmartEnterpriseBot.Infrastructure.Servicees
             _context = applicationDbContext;
         }
 
-        public async Task<Guid> AddKnowledgeEntryAsync(KnowledgeEntry data, List<Role> allowedRoles)
+        public async Task<Guid> AddKnowledgeEntryAsync(KnowledgeEntry data)
         {
             var entry = new KnowledgeEntry
             {
@@ -30,7 +30,7 @@ namespace SmartEnterpriseBot.Infrastructure.Servicees
             return entry.RecordId;
         }
 
-        public async Task<bool> UpdateKnowledgeEntryAsync(KnowledgeEntry update, List<Role> allowedRoles)
+        public async Task<bool> UpdateKnowledgeEntryAsync(KnowledgeEntry update)
         {
             var entry = await _context.KnowledgeEntries
                 .Include(e => e.AllowedRoles)
@@ -49,9 +49,9 @@ namespace SmartEnterpriseBot.Infrastructure.Servicees
                 _context.KnowledgeRoles.RemoveRange(entry.AllowedRoles);
             }
 
-            var newKnowledgeRoles = allowedRoles.Select(r => new KnowledgeRole
+            var newKnowledgeRoles = update.AllowedRoles.Select(r => new KnowledgeRole
             {
-                Role = r,
+                Role = r.Role,
                 KnowledgeEntry = entry
             }).ToList();
 

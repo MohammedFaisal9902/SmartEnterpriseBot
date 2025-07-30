@@ -9,7 +9,7 @@ using SmartEnterpriseBot.Application.Interfaces;
 using SmartEnterpriseBot.Domain.Entities;
 using SmartEnterpriseBot.Domain.Enums;
 using SmartEnterpriseBot.Infrastructure.Identity;
-using SmartEnterpriseBot.Infrastructure.Services.Storage;
+using SmartEnterpriseBot.Infrastructure.Services;
 using System.Text;
 
 namespace SmartEnterpriseBot.Tests

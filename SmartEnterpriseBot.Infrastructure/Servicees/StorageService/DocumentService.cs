@@ -11,7 +11,7 @@ using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
 using Xceed.Words.NET;
 
-namespace SmartEnterpriseBot.Infrastructure.Services.Storage
+namespace SmartEnterpriseBot.Infrastructure.Services
 {
     public class DocumentService : IDocumentService
     {

@@ -10,7 +10,7 @@ using SmartEnterpriseBot.Domain.Enums;
 using SmartEnterpriseBot.Infrastructure.Identity;
 using System.Text;
 
-namespace SmartEnterpriseBot.Infrastructure.Services
+namespace SmartEnterpriseBot.Infrastructure.Servicees.SearchService
 {
     public class AiAnswerService : IAiAnswerService
     {

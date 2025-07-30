@@ -42,22 +42,22 @@ namespace SmartEnterpriseBot.API.Controllers
 
         [HttpPost]
         [Authorize(Roles = $"{nameof(Role.Admin)},{nameof(Role.HR)}")]
-        public async Task<IActionResult> Add([FromBody] KnowledgeEntry entry, [FromQuery] List<Role> roles)
+        public async Task<IActionResult> Add([FromBody] KnowledgeEntry entry)
         {
             if (entry == null)
                 return BadRequest("Entry cannot be null");
 
             entry.CreatedBy = User.Identity?.Name;
-            var id = await _knowledgeService.AddKnowledgeEntryAsync(entry, roles);
+            var id = await _knowledgeService.AddKnowledgeEntryAsync(entry);
             return Ok(new { Message = "Knowledge entry added", Id = id });
         }
 
         [HttpPut("{id}")]
         [Authorize(Roles = $"{nameof(Role.Admin)},{nameof(Role.HR)}")]
-        public async Task<IActionResult> Update(Guid id, [FromBody] KnowledgeEntry update, [FromQuery] List<Role> roles)
+        public async Task<IActionResult> Update(Guid id, [FromBody] KnowledgeEntry update)
         {
             update.RecordId = id;
-            var result = await _knowledgeService.UpdateKnowledgeEntryAsync(update, roles);
+            var result = await _knowledgeService.UpdateKnowledgeEntryAsync(update);
             if (!result) return NotFound();
             return Ok("Knowledge entry updated.");
         }

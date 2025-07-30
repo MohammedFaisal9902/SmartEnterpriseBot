@@ -7,9 +7,12 @@ using SmartEnterpriseBot.Infrastructure.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Entity Framework
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        sqlOptions => sqlOptions.EnableRetryOnFailure()
+    )
+);
 
 builder.Services.ConfigureIdentityOptions();
 

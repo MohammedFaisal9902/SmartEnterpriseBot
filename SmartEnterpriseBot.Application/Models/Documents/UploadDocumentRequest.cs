@@ -15,6 +15,6 @@ namespace SmartEnterpriseBot.Application.Models.Documents
         [Required]
         public string DocumentType { get; set; }
 
-        public string Description { get; set; }
+        public string? Description { get; set; }
     }
 }

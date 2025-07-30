@@ -1,8 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using SmartEnterpriseBot.Application.Interfaces;
 using SmartEnterpriseBot.Infrastructure.Servicees;
+using SmartEnterpriseBot.Infrastructure.Servicees.RoleService;
+using SmartEnterpriseBot.Infrastructure.Servicees.SearchService;
 using SmartEnterpriseBot.Infrastructure.Services;
-using SmartEnterpriseBot.Infrastructure.Services.Storage;
 
 namespace SmartEnterpriseBot.Infrastructure
 {
@@ -14,6 +15,8 @@ namespace SmartEnterpriseBot.Infrastructure
             services.AddScoped<IAiAnswerService, AiAnswerService>();
             services.AddScoped<IKnowledgeService, KnowledgeService>();
             services.AddScoped<ISearchIndexerService, SearchIndexerService>();
+            services.AddScoped<IRoleManagementService, RoleManagementService>();
+            services.AddScoped<IUserService, UserService>();
 
             return services;
         }

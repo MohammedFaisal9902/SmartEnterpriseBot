@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using SmartEnterpriseBot.Domain.Entities;
 using SmartEnterpriseBot.Domain.Enums;
 using SmartEnterpriseBot.Infrastructure.Identity;
-using SmartEnterpriseBot.Infrastructure.Servicees;
+using SmartEnterpriseBot.Infrastructure.Servicees.SearchService;
 
 namespace SmartEnterpriseBot.Tests
 {
@@ -21,11 +21,6 @@ namespace SmartEnterpriseBot.Tests
             _service = new KnowledgeService(_context);
         }
 
-        public void Dispose()
-        {
-            _context.Dispose();
-        }
-
         [Fact]
         public async Task AddKnowledgeEntryAsync_ShouldAddEntry()
         {
@@ -41,9 +36,7 @@ namespace SmartEnterpriseBot.Tests
                 }
             };
 
-            var roles = new List<Role> { Role.IT };
-
-            var id = await _service.AddKnowledgeEntryAsync(entry, roles);
+            var id = await _service.AddKnowledgeEntryAsync(entry);
 
             var result = await _context.KnowledgeEntries
                 .Include(k => k.AllowedRoles)
@@ -84,12 +77,15 @@ namespace SmartEnterpriseBot.Tests
                 RecordId = recordId,
                 Title = "New Title",
                 Content = "New Content",
-                UpdatedBy = "User2"
+                UpdatedBy = "User2",
+                AllowedRoles = new List<KnowledgeRole> 
+                {
+                    new KnowledgeRole { Role = Role.HR }
+                }
+                
             };
 
-            var newRoles = new List<Role> { Role.HR };
-
-            var result = await _service.UpdateKnowledgeEntryAsync(updatedEntry, newRoles);
+            var result = await _service.UpdateKnowledgeEntryAsync(updatedEntry);
 
             Assert.True(result);
 
@@ -172,5 +168,11 @@ namespace SmartEnterpriseBot.Tests
             Assert.NotNull(result);
             Assert.Equal("Find Me", result.Title);
         }
+
+        public void Dispose()
+        {
+            _context.Dispose();
+        }
+
     }
 }

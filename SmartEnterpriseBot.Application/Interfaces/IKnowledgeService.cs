@@ -12,9 +12,8 @@ namespace SmartEnterpriseBot.Application.Interfaces
         /// Adds a new knowledge entry and associates it with the specified allowed roles.
         /// </summary>
         /// <param name="entry">The knowledge entry to add.</param>
-        /// <param name="allowedRoles">The list of roles that are allowed to access this entry.</param>
         /// <returns>The unique identifier of the newly added knowledge entry.</returns>
-        Task<Guid> AddKnowledgeEntryAsync(KnowledgeEntry entry, List<Role> allowedRoles);
+        Task<Guid> AddKnowledgeEntryAsync(KnowledgeEntry entry);
 
         /// <summary>
         /// Retrieves a knowledge entry by its unique identifier.
@@ -29,7 +28,7 @@ namespace SmartEnterpriseBot.Application.Interfaces
         /// <param name="entry">The updated knowledge entry.</param>
         /// <param name="allowedRoles">The updated list of roles allowed to access the entry.</param>
         /// <returns>True if the update was successful; otherwise, false.</returns>
-        Task<bool> UpdateKnowledgeEntryAsync(KnowledgeEntry entry, List<Role> allowedRoles);
+        Task<bool> UpdateKnowledgeEntryAsync(KnowledgeEntry entry);
 
         /// <summary>
         /// Deletes a knowledge entry by its unique identifier.

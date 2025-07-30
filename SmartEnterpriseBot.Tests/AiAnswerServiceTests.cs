@@ -7,9 +7,9 @@ using Moq;
 using SmartEnterpriseBot.Domain.Entities;
 using SmartEnterpriseBot.Domain.Enums;
 using SmartEnterpriseBot.Infrastructure.Identity;
-using SmartEnterpriseBot.Infrastructure.Services;
+using SmartEnterpriseBot.Infrastructure.Servicees.SearchService;
 
-namespace SmartEnterpriseBot.Tests.Services;
+namespace SmartEnterpriseBot.Tests;
 
 public class AiAnswerServiceTests : IDisposable
 {
