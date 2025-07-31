@@ -35,7 +35,7 @@ namespace SmartEnterpriseBot.Infrastructure.Servicees.SearchService
         {
             try
             {
-                _logger.LogInformation("User {UserId} asked: '{Question}' with role: {UserRole}", userId, question, userRole);
+                _logger.LogInformation("User {UserId} asked: '{Question}' with role: {UserRole}", userId, question, userRole.ToString());
 
                 var structured = await GetStructuredAnswerAsync(question, userRole);
                 if (!string.IsNullOrWhiteSpace(structured))
@@ -89,14 +89,14 @@ namespace SmartEnterpriseBot.Infrastructure.Servicees.SearchService
 
         private async Task<string?> SearchAndAnswerFromIndexAsync(string question, Role userRole)
         {
-            var cacheKey = $"search_{question.GetHashCode()}_{userRole}";
+            var cacheKey = $"search_{question.GetHashCode()}_{userRole.ToString()}";
             if (_cache.TryGetValue(cacheKey, out string? cached))
             {
                 _logger.LogInformation("Search cache hit.");
                 return cached;
             }
 
-            _logger.LogInformation("Starting search for question: '{Question}' with role: {Role}", question, userRole);
+            _logger.LogInformation("Starting search for question: '{Question}' with role: {Role}", question, userRole.ToString());
 
             var searchOptions = new SearchOptions
             {
@@ -107,7 +107,7 @@ namespace SmartEnterpriseBot.Infrastructure.Servicees.SearchService
 
             if (!string.Equals(userRole.ToString(), "Admin", StringComparison.OrdinalIgnoreCase))
             {
-                var filter = $"allowedRoles/any(r: r eq '{userRole}')";
+                var filter = $"allowedRoles/any(r: r eq '{userRole.ToString()}')";
                 searchOptions.Filter = filter;
                 _logger.LogInformation("Applying filter: {Filter}", filter);
             }
@@ -149,7 +149,7 @@ namespace SmartEnterpriseBot.Infrastructure.Servicees.SearchService
 
                 if (sb.Length == 0)
                 {
-                    _logger.LogWarning("No search results found for role {Role} and question '{Question}'", userRole, question);
+                    _logger.LogWarning("No search results found for role {Role} and question '{Question}'", userRole.ToString(), question);
 
                     _logger.LogInformation("Attempting search without role filter for debugging...");
                     var debugOptions = new SearchOptions { Size = 3 };
